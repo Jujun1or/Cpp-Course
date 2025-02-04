@@ -17,4 +17,4 @@ RUN apt-get update && \
     x11-xserver-utils \ 
     && rm -rf /var/lib/apt/lists/*
 
-ENV DISPLAY=192.168.0.174
+ENV DISPLAY=192.168.0.174:0

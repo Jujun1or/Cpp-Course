@@ -79,7 +79,6 @@ macOS:
 В терминале выполните:
 
 ```bash
-Copy
 cd /build
 cmake ..
 make

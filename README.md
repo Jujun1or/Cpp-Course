@@ -28,7 +28,7 @@
 2. Откройте терминал (верхнее меню) и в верхнем меню самого терминала откройте Git Bash консоль.
 3. Введите команду:
    ```bash
-   git clone https://github.com/Ftp-Glich/Cpp-Cource.git
+   git clone https://github.com/Ftp-Glich/Cpp-Cource.git (если не работает ссылка скопируйте ссылку в зеленой кнопке code на главном экране)
    ```
 4. Теперь у вас есть нужные файлы!
 5. Откройте в VSCode именно папку из репозитория Cpp-Course.

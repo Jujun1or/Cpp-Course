@@ -1,0 +1,23 @@
+[MainMenu]
+type = menu
+items = [
+    { text = "Start", action = "start_something" },
+    { text = "Options", submenu = "OptionsMenu" },
+    { text = "Exit", action = "open_exit_dialog" } 
+]
+
+[OptionsMenu]
+type = menu
+items = [
+    { text = "Graphics", action = "open_graphics_options" },
+    { text = "Sound", action = "toggle_sound" },
+    { text = "Back", action = "back" } 
+]
+
+[ExitDialog]
+type = dialog
+message = "Are you sure you want to exit?"
+buttons = [
+    { text = "Yes", action = "exit" },
+    { text = "No", action = "close_dialog" }  
+]

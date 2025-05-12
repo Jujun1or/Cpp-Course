@@ -30,7 +30,7 @@
             "program": "${workspaceFolder}/build/app",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "environment": [{"name": "DISPLAY", "value": "192.168.84.215:0"}],
+            "environment": [{"name": "DISPLAY", "value": "host.docker.internal:0"}],
             "preLaunchTask": "Build CMake Project",
             "miDebuggerPath": "/usr/bin/gdb"
         }

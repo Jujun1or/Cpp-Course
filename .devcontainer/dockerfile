@@ -17,4 +17,4 @@ RUN apt-get update && \
     x11-xserver-utils \ 
     && rm -rf /var/lib/apt/lists/*
 
-ENV DISPLAY=<your ip>:0
+ENV DISPLAY=host.docker.internal:0

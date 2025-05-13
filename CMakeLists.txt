@@ -6,5 +6,5 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 
-add_executable(app main.cpp)
+add_executable(app main.cpp space_invaders.cpp)
 target_link_libraries(app ${SDL2_LIBRARIES})

@@ -1,0 +1,3 @@
+startY=50
+enemySpeed=50
+shootInterval=1.0

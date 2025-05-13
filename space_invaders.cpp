@@ -67,9 +67,7 @@ int Player::getLives() const {
 Enemy::Enemy(float x, float y, int w, int h, int p, bool ibe) 
     : GameObject(x, y, w, h), points(p), isBottomEnemy(ibe) {}
 
-void Enemy::update(float delta) {
-    // Можно добавить дополнительную логику при необходимости
-}
+void Enemy::update(float delta) {}
 
 void Enemy::render(SDL_Renderer* renderer) {
     SDL_Rect rect = getRect();
@@ -192,9 +190,16 @@ void Level::updateBottomEnemies() {
 }
 
 void Level::update(float delta, int screenWidth, std::vector<Bullet*>& bullets) {
-    static int lastEnemyCount = enemies.size();
     static bool movingRight = true;
     static bool shouldMoveDown = false;
+    static int lastEnemyCount = enemies.size();
+    
+    shootTimer += delta;
+    
+    if (enemies.empty()) {
+        createEnemies(screenWidth);
+        return;
+    }
     
     // Подсчет текущих врагов и ускорение
     int currentEnemyCount = 0;
@@ -207,13 +212,6 @@ void Level::update(float delta, int screenWidth, std::vector<Bullet*>& bullets) 
         config.enemySpeed *= speedIncrease;
     }
     lastEnemyCount = currentEnemyCount;
-    
-    shootTimer += delta;
-    
-    if (enemies.empty()) {
-        createEnemies(screenWidth);
-        return;
-    }
     
     // Проверка достижения края
     bool reachedEdge = false;
@@ -260,10 +258,7 @@ void Level::update(float delta, int screenWidth, std::vector<Bullet*>& bullets) 
         if (!shooters.empty()) {
             int idx = rand() % shooters.size();
             SDL_Rect rect = shooters[idx]->getRect();
-            bullets.push_back(new Bullet(rect.x + rect.w/2 - 2, 
-                                      rect.y + rect.h, 
-                                      false, 
-                                      300.0f));
+            bullets.push_back(new Bullet(rect.x + rect.w/2 - 2, rect.y + rect.h, false, 300.0f));
         }
     }
     
@@ -302,15 +297,21 @@ bool Level::enemiesReachedBottom(int screenHeight) const {
 }
 
 // Game implementation
-Game::Game() : window(nullptr), renderer(nullptr), running(true), player(nullptr), score(0), gameOver(false) {}
+Game::Game() : window(nullptr), renderer(nullptr), running(true), player(nullptr), 
+              score(0), gameOver(false), font(nullptr), scoreTexture(nullptr),
+              livesTexture(nullptr) {}
 
 Game::~Game() {
+    if (scoreTexture) SDL_DestroyTexture(scoreTexture);
+    if (livesTexture) SDL_DestroyTexture(livesTexture);
+    if (font) TTF_CloseFont(font);
     delete player;
     for (auto bullet : bullets) {
         delete bullet;
     }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
 }
 
@@ -338,12 +339,56 @@ bool Game::init() {
         return false;
     }
     
+    if (TTF_Init() == -1) {
+        std::cerr << "TTF_Init Error: " << TTF_GetError() << std::endl;
+        return false;
+    }
+    
+    font = TTF_OpenFont("arialmt.ttf", 24);
+    if (!font) {
+        std::cerr << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
+        return false;
+    }
+    
     if (!level.loadFromFile("level.txt")) {
         std::cerr << "Failed to load level config, using defaults" << std::endl;
     }
     
     player = new Player(400, 550);
     return true;
+}
+
+void Game::updateTextTextures() {
+    if (!renderer || !font || !player) return;
+    
+    if (scoreTexture) SDL_DestroyTexture(scoreTexture);
+    if (livesTexture) SDL_DestroyTexture(livesTexture);
+    
+    SDL_Color white = {255, 255, 255, 255};
+    
+    std::string scoreText = "Score: " + std::to_string(score);
+    SDL_Surface* scoreSurface = TTF_RenderText_Solid(font, scoreText.c_str(), white);
+    scoreTexture = SDL_CreateTextureFromSurface(renderer, scoreSurface);
+    scoreTextureWidth = scoreSurface->w;
+    scoreTextureHeight = scoreSurface->h;
+    SDL_FreeSurface(scoreSurface);
+    
+    std::string livesText = "Lives: " + std::to_string(player->getLives());
+    SDL_Surface* livesSurface = TTF_RenderText_Solid(font, livesText.c_str(), white);
+    livesTexture = SDL_CreateTextureFromSurface(renderer, livesSurface);
+    livesTextureWidth = livesSurface->w;
+    livesTextureHeight = livesSurface->h;
+    SDL_FreeSurface(livesSurface);
+}
+
+void Game::renderText(SDL_Renderer* renderer) {
+    if (!scoreTexture || !livesTexture) return;
+    
+    SDL_Rect scoreRect = {10, 10, scoreTextureWidth, scoreTextureHeight};
+    SDL_Rect livesRect = {10, 40, livesTextureWidth, livesTextureHeight};
+    
+    SDL_RenderCopy(renderer, scoreTexture, NULL, &scoreRect);
+    SDL_RenderCopy(renderer, livesTexture, NULL, &livesRect);
 }
 
 void Game::handleEvents() {
@@ -383,7 +428,6 @@ void Game::update(float deltaTime) {
     player->update(deltaTime);
     level.update(deltaTime, 800, bullets);
     
-    // Update bullets
     for (auto it = bullets.begin(); it != bullets.end();) {
         (*it)->update(deltaTime);
         if (!(*it)->isActive()) {
@@ -396,23 +440,19 @@ void Game::update(float deltaTime) {
     
     checkCollisions();
     
-    // Check game over conditions
     if (player->getLives() <= 0 || level.enemiesReachedBottom(600)) {
         gameOver = true;
     }
     
-    // Check level complete
     if (level.allEnemiesDestroyed()) {
         score += 100;
         level = Level();
         if (!level.loadFromFile("level.txt")) {
-            // Use defaults if file loading fails
         }
     }
 }
 
 void Game::checkCollisions() {
-    // Player bullets vs enemies
     for (auto bullet : bullets) {
         if (bullet->isFromPlayer() && bullet->isActive()) {
             for (auto enemy : level.getEnemies()) {
@@ -431,7 +471,6 @@ void Game::checkCollisions() {
         }
     }
     
-    // Enemy bullets vs player
     for (auto bullet : bullets) {
         if (!bullet->isFromPlayer() && bullet->isActive() && player->isActive()) {
             SDL_Rect bulletRect = bullet->getRect();
@@ -449,6 +488,8 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     
+    updateTextTextures();
+    
     if (player->isActive()) {
         player->render(renderer);
     }
@@ -461,10 +502,7 @@ void Game::render() {
         }
     }
     
-    // Render UI to console
-    std::cout << "Score: " << score << " | Lives: " << player->getLives();
-    if (gameOver) std::cout << " | GAME OVER - Press Enter to restart";
-    std::cout << "\r";
+    renderText(renderer);
     
     SDL_RenderPresent(renderer);
 }
@@ -481,8 +519,8 @@ void Game::resetGame() {
     gameOver = false;
     level = Level();
     if (!level.loadFromFile("level.txt")) {
-        // Use defaults if file loading fails
     }
+    updateTextTextures();
 }
 
 void Game::run() {
@@ -496,6 +534,6 @@ void Game::run() {
         update(deltaTime);
         render();
         
-        SDL_Delay(16); // Cap at ~60 FPS
+        SDL_Delay(16);
     }
 }

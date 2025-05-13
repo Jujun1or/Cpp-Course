@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <vector>
 #include <string>
 
@@ -103,11 +104,21 @@ class Game {
     int score;
     bool gameOver;
     
+    TTF_Font* font;
+    SDL_Texture* scoreTexture;
+    SDL_Texture* livesTexture;
+    int scoreTextureWidth;
+    int scoreTextureHeight;
+    int livesTextureWidth;
+    int livesTextureHeight;
+    
     void handleEvents();
     void update(float delta);
     void render();
     void checkCollisions();
     void resetGame();
+    void updateTextTextures();
+    void renderText(SDL_Renderer* renderer);
     
 public:
     Game();
